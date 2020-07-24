@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class PlayFabLogin : MonoBehaviour
 {
+    public GameObject loginPanel;
     private string userEmail;
     private string secret;
     public void Start()
@@ -17,21 +18,52 @@ public class PlayFabLogin : MonoBehaviour
             */
             PlayFabSettings.staticSettings.TitleId = "64A28";
         }
-        var request = new LoginWithCustomIDRequest { CustomId = "GettingStartedGuide", CreateAccount = true };
-        PlayFabClientAPI.LoginWithCustomID(request, OnLoginSuccess, OnLoginFailure);
-        //var request = new LoginWithEmailAddressRequest { Email = userEmail, Password = secret };
-        //PlayFabClientAPI.LoginWithEmailAddress(request, OnLoginSuccess, OnLoginFailure);
+        //var request = new LoginWithCustomIDRequest { CustomId = "GettingStartedGuide", CreateAccount = true };
+        //PlayFabClientAPI.LoginWithCustomID(request, OnLoginSuccess, OnLoginFailure);
+        if (PlayerPrefs.HasKey("userEmail") && PlayerPrefs.HasKey("userSecret"))
+        {
+            userEmail = PlayerPrefs.GetString("userEmail");
+            secret = PlayerPrefs.GetString("userSecret");
+            var request = new LoginWithEmailAddressRequest { Email = userEmail, Password = secret };
+            PlayFabClientAPI.LoginWithEmailAddress(request, OnLoginSuccess, OnLoginFailure);
+        }
+        
     }
 
+    
     private void OnLoginSuccess(LoginResult result)
     {
-        Debug.Log("Congratulations, you made your first successful API call! "+result);
+        Debug.Log("Congratulations, you made your first successful API call! " + "Login Success");
+        loginPanel.SetActive(false);
+    }
+    public void RegisterUserSuccess(RegisterPlayFabUserResult response)
+    {
+        Debug.Log("Congratulations, you made your first successful API call! " + "Register Success");
+        PlayerPrefs.SetString("userEmail", userEmail);
+        PlayerPrefs.SetString("userSecret", secret);
+        loginPanel.SetActive(false);
+    }
+    public void RegisterUserFailure(PlayFabError error)
+    {
+        Debug.LogError(error.GenerateErrorReport());
     }
 
     private void OnLoginFailure(PlayFabError error)
     {
-        Debug.LogWarning("Something went wrong with your first API call.  :(");
-        Debug.LogError("Here's some debug information:");
-        Debug.LogError(error.GenerateErrorReport());
+        var registerRequest = new RegisterPlayFabUserRequest { Email = userEmail, Password = secret };
+        PlayFabClientAPI.RegisterPlayFabUser(registerRequest, RegisterUserSuccess, RegisterUserFailure);
+    }
+    public void SetEmail(string emailid)
+    {
+        userEmail = emailid;
+    }
+    public void SetPassword(string pass)
+    {
+        secret = pass;
+    }
+    public void OnClickLogin()
+    {
+        var request = new LoginWithCustomIDRequest { CustomId = "GettingStartedGuide", CreateAccount = true };
+        PlayFabClientAPI.LoginWithCustomID(request, OnLoginSuccess, OnLoginFailure);
     }
 }
